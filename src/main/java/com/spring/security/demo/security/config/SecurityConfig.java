@@ -16,7 +16,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .authorizeHttpRequests(autorized ->
-                                autorized.requestMatchers("/helloNoSecure").permitAll()
+                                autorized.requestMatchers(
+                                        "/helloNoSecure",
+                                                "/api/student/scores/average/**").permitAll()
 //                                      .requestMatchers("/public/**").permitAll() // Allow access to all endpoints starting with /public/
                                         .anyRequest().authenticated() // All other requests require authentication
                 ).formLogin(AbstractAuthenticationFilterConfigurer::permitAll).httpBasic(Customizer.withDefaults()); // Use HTTP Basic authentication
