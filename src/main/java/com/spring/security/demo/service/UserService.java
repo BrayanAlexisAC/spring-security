@@ -43,4 +43,12 @@ public interface UserService {
      * @param id ID of the user to be deleted.
      */
     void deleteUserById(Long id);
+
+    /**
+     * Method to encode a password.
+     *
+     * @param password Password to be encoded.
+     * @return Encoded password.
+     */
+    String encodePassword(String password);
 }
