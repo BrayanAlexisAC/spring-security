@@ -1,19 +1,31 @@
 package com.spring.security.demo.service.impl;
 
+import com.spring.security.demo.constants.Constants;
+import com.spring.security.demo.dto.AuthLoginRequestDTO;
+import com.spring.security.demo.dto.AuthResponseDTO;
 import com.spring.security.demo.repository.UserRepository;
+import com.spring.security.demo.service.SSUserDetailsService;
+import com.spring.security.demo.utils.JwtUtils;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 @Service
-public class UserDetailsServiceImp implements UserDetailsService {
+public class UserDetailsServiceImp implements SSUserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -44,7 +56,33 @@ public class UserDetailsServiceImp implements UserDetailsService {
         );
     }
 
-    public UserDetailsServiceImp(UserRepository userRepository) {
+    @Override
+    public AuthResponseDTO loginUser(AuthLoginRequestDTO authLoginRequestDTO) {
+        var username = authLoginRequestDTO.username();
+        var password = authLoginRequestDTO.password();
+        var authenticated = authenticated(username, password);
+        var securityContext = SecurityContextHolder.getContext();
+        securityContext.setAuthentication(authenticated);
+
+        return new AuthResponseDTO(username, "success", jwtUtils.createToken(authenticated));
+    }
+
+    public Authentication authenticated(String username, String password) {
+        var userDetails = loadUserByUsername(username);
+        if (Objects.isNull(userDetails)){
+            throw new BadCredentialsException(Constants.INVALID_USERNAME_OR_PASSWORD);
+        } else if (!passwordEncoder.matches(password, userDetails.getPassword())) {
+            throw new BadCredentialsException(Constants.INVALID_USERNAME_OR_PASSWORD);
+        }
+
+        return new UsernamePasswordAuthenticationToken(username, userDetails.getPassword(), userDetails.getAuthorities());
+    }
+
+    public UserDetailsServiceImp(UserRepository userRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 JwtUtils jwtUtils) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
     }
 }
